@@ -1,11 +1,8 @@
-import React, { useEffect, useState, useMemo } from "react";
+// src/components/RelationshipWeb.jsx
+import React, { useEffect, useState } from "react";
 import ReactFlow, { Background, Controls } from "react-flow-renderer";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
-
-// Define static nodeTypes and edgeTypes outside the component
-const nodeTypes = {};
-const edgeTypes = {};
 
 export default function RelationshipWeb() {
   const [elements, setElements] = useState([]);
@@ -16,30 +13,19 @@ export default function RelationshipWeb() {
       const nodes = {};
       const edges = [];
 
-      snap.docs.forEach((doc) => {
-        const data = doc.data();
-        (data.relationships || []).forEach((rel) => {
+      snap.docs.forEach(doc => {
+        (doc.data().relationships || []).forEach(rel => {
           const { source, target, type } = rel;
-          // Ensure nodes exist
-          [source, target].forEach((name) => {
+          [source, target].forEach(name => {
             if (!nodes[name]) {
               nodes[name] = {
                 id: name,
                 data: { label: name },
-                position: {
-                  x: Math.random() * 800,
-                  y: Math.random() * 600,
-                },
+                position: { x: Math.random()*600, y: Math.random()*400 }
               };
             }
           });
-          edges.push({
-            id: `${source}-${target}`,
-            source,
-            target,
-            label: type,
-            animated: true,
-          });
+          edges.push({ id:`${source}-${target}`, source, target, label:type, animated:true });
         });
       });
 
@@ -47,20 +33,13 @@ export default function RelationshipWeb() {
     })();
   }, []);
 
-  // Memoize nodeTypes and edgeTypes to avoid recreating them each render
-  const memoNodeTypes = useMemo(() => nodeTypes, []);
-  const memoEdgeTypes = useMemo(() => edgeTypes, []);
+  if (elements.length === 0) {
+    return <p className="placeholder">No relationships to display.</p>;
+  }
 
   return (
-    <div
-      style={{ width: "100%", height: "400px" }}
-      className="mt-8 bg-white shadow rounded"
-    >
-      <ReactFlow
-        elements={elements}
-        nodeTypes={memoNodeTypes}
-        edgeTypes={memoEdgeTypes}
-      >
+    <div style={{ width: "100%", height: "400px" }}>
+      <ReactFlow elements={elements}>
         <Background />
         <Controls />
       </ReactFlow>
