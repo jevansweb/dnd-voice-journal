@@ -3,41 +3,73 @@ import React, { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 
+const CATEGORIES = [
+  { key: "locations", label: "Locations" },
+  { key: "characters", label: "Characters" },
+  { key: "events",     label: "Events" },
+  { key: "npcs",       label: "NPCs" },
+  { key: "factions",   label: "Factions" },
+];
+
+// Build an initial empty object: { locations: [], characters: [], ... }
+const INITIAL_ENTRIES = CATEGORIES.reduce((acc, { key }) => {
+  acc[key] = [];
+  return acc;
+}, {});
+
 export default function Lorebook() {
-  const [entries, setEntries] = useState([]);
+  const [entries, setEntries] = useState(INITIAL_ENTRIES);
   const [filter, setFilter]   = useState("");
 
   useEffect(() => {
     (async () => {
       const snap = await getDocs(collection(db, "sessions"));
-      const all = [];
+      const grouped = CATEGORIES.reduce((acc, { key }) => {
+        acc[key] = [];
+        return acc;
+      }, {});
 
       snap.docs.forEach(doc => {
         const data = doc.data();
-        ["events","locations","characters","npcs","factions"].forEach(key => {
+        CATEGORIES.forEach(({ key }) => {
           (data[key] || []).forEach(item => {
-            all.push({
-              category: key,
-              ...item,
-              sessionTimestamp: data.createdAt
-            });
+            const label = item.name || item.title;
+            const content = item.description || item.summary || "";
+            if (label) {
+              grouped[key].push({
+                id:      `${key}-${label}-${doc.id}`,
+                label,
+                content,
+                date:    data.createdAt?.toDate(),
+              });
+            }
           });
         });
       });
 
-      // sort newest → oldest
-      all.sort((a,b) =>
-        b.sessionTimestamp?.toDate() - a.sessionTimestamp?.toDate()
-      );
+      // Sort each group newest → oldest
+      CATEGORIES.forEach(({ key }) => {
+        grouped[key].sort((a, b) => b.date - a.date);
+      });
 
-      setEntries(all);
+      setEntries(grouped);
     })();
   }, []);
 
-  const filtered = entries.filter(e => 
-    (e.name || e.title || "")
-      .toLowerCase()
-      .includes(filter.toLowerCase())
+  // Only filter on real arrays
+  const filterGroup = (arr) =>
+    Array.isArray(arr)
+      ? arr.filter(
+          e =>
+            e.label.toLowerCase().includes(filter.toLowerCase()) ||
+            e.content.toLowerCase().includes(filter.toLowerCase())
+        )
+      : [];
+
+  // Total count across all categories
+  const totalCount = Object.values(entries).reduce(
+    (sum, arr) => sum + filterGroup(arr).length,
+    0
   );
 
   return (
@@ -45,25 +77,48 @@ export default function Lorebook() {
       <h2>Lorebook</h2>
       <input
         type="text"
-        placeholder="Search..."
+        placeholder="Search all lore…"
         value={filter}
         onChange={e => setFilter(e.target.value)}
-        className="mb-4 p-2 w-full"
+        style={{
+          padding: "0.5rem",
+          width: "100%",
+          margin: "1rem 0",
+          border: "1px solid #806632",
+          borderRadius: "0.25rem",
+        }}
       />
 
-      {filtered.length === 0 && (
-        <p className="placeholder">No entries match your search.</p>
+      {totalCount === 0 && (
+        <p className="placeholder">No lore entries found.</p>
       )}
 
-      {filtered.map((e,i) => (
-        <div key={i} className="lore-card">
-          <p className="text-xs italic">
-            {e.category} • {e.sessionTimestamp?.toDate().toLocaleDateString()}
-          </p>
-          <h3 className="font-semibold">{e.title || e.name}</h3>
-          <p>{e.summary || e.description || e.role || e.goals}</p>
-        </div>
-      ))}
+      {CATEGORIES.map(({ key, label }) => {
+        const group = filterGroup(entries[key]);
+        if (group.length === 0) return null;
+        return (
+          <div key={key} className="lore-group">
+            <h3>{label}</h3>
+            {group.map(item => (
+              <div key={item.id} className="lore-card">
+                <strong>{item.label}</strong>
+                <div style={{ fontSize: "0.9rem", marginTop: "0.5rem" }}>
+                  {item.content}
+                </div>
+                <div
+                  style={{
+                    fontSize: "0.8rem",
+                    color: "#826F5A",
+                    marginTop: "0.5rem",
+                  }}
+                >
+                  {item.date?.toLocaleDateString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }
