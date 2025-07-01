@@ -4,9 +4,7 @@ import {
   collection, 
   query, 
   orderBy, 
-  onSnapshot, 
-  doc, 
-  updateDoc 
+  onSnapshot
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../firebase";
