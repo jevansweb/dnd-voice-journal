@@ -1,35 +1,49 @@
 // src/components/AudioUploader.jsx
 import React, { useState } from "react";
 import {
-  ref, uploadBytesResumable, getDownloadURL
+  ref,
+  uploadBytesResumable,
+  getDownloadURL
 } from "firebase/storage";
 import {
-  collection, addDoc, serverTimestamp
+  collection,
+  addDoc,
+  serverTimestamp
 } from "firebase/firestore";
 import { storage, db } from "../firebase";
 
-export default function AudioUploader() {
-  const [file, setFile]       = useState(null);
-  const [title, setTitle]     = useState("");
-  const [progress, setProgress] = useState(0);
-  const [error, setError]     = useState("");
+export default function AudioUploader({ onUploaded }) {
+  const [file, setFile]         = useState(null);
+  const [title, setTitle]       = useState("");
+  const [uploadPct, setUploadPct] = useState(0);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError]       = useState("");
 
   const handleUpload = () => {
     if (!file || !title.trim()) {
-      setError("Please choose a file AND enter a session title.");
+      setError("Select a file and enter a session title.");
       return;
     }
     setError("");
+    setUploading(true);
     const storageRef = ref(storage, `sessions/${Date.now()}_${file.name}`);
-    const task       = uploadBytesResumable(storageRef, file);
+    const task = uploadBytesResumable(storageRef, file);
 
     task.on(
       "state_changed",
-      snap => setProgress(Math.round((snap.bytesTransferred/snap.totalBytes)*100)),
-      err => setError(err.message),
+      snapshot => {
+        const pct = Math.round(
+          (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+        );
+        setUploadPct(pct);
+      },
+      err => {
+        setError(err.message);
+        setUploading(false);
+      },
       async () => {
         const url = await getDownloadURL(task.snapshot.ref);
-        await addDoc(collection(db, "sessions"), {
+        const docRef = await addDoc(collection(db, "sessions"), {
           title:           title.trim(),
           audioURL:        url,
           createdAt:       serverTimestamp(),
@@ -37,30 +51,60 @@ export default function AudioUploader() {
         });
         setFile(null);
         setTitle("");
-        setProgress(0);
+        setUploading(false);
+        setUploadPct(0);
+        if (onUploaded) onUploaded(docRef.id);
       }
     );
   };
 
   return (
-    <div>
+    <div style={{ marginBottom: "2rem" }}>
       <input
         className="input"
         type="text"
         placeholder="Session Title (e.g. Session 5)"
         value={title}
         onChange={e => setTitle(e.target.value)}
+        disabled={uploading}
       />
       <input
         className="input"
         type="file"
         accept="audio/*"
         onChange={e => setFile(e.target.files[0])}
+        disabled={uploading}
       />
-      <button className="button" onClick={handleUpload} disabled={!file}>
-        Upload & Create Session
+      <button
+        className="button"
+        onClick={handleUpload}
+        disabled={uploading}
+      >
+        {uploading ? "Uploading…" : "Upload & Create Session"}
       </button>
-      {progress > 0 && <p>Uploading: {progress}%</p>}
+      {uploading && (
+        <div style={{ marginTop: "1rem" }}>
+          <div
+            style={{
+              height: "10px",
+              background: "#ddd",
+              borderRadius: "5px",
+              overflow: "hidden"
+            }}
+          >
+            <div
+              style={{
+                width: `${uploadPct}%`,
+                height: "100%",
+                background: "var(--accent)"
+              }}
+            />
+          </div>
+          <p style={{ fontSize: "0.85rem", color: "#999" }}>
+            {uploadPct}% complete
+          </p>
+        </div>
+      )}
       {error && <p style={{ color: "red" }}>{error}</p>}
     </div>
   );

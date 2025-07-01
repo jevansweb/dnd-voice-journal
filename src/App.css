@@ -1,30 +1,31 @@
 /* src/App.css */
 
 /* Import fonts */
-@import url("https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Merriweather:wght@400;700&display=swap");
+/* Fantasy header font */
+@import url('https://fonts.googleapis.com/css2?family=MedievalSharp&family=New+Rocker&display=swap');
+
+@import url("https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Cinzel+Decorative&display=swap");
 
 :root {
-  /* Core colors */
-  --bg:          #121212;   /* pitch-black background */
-  --panel-bg:    #1e1e1e;   /* dark panels */
-  --text:        #e0e0e0;   /* off-white text */
-  --accent:      #c0392b;   /* deep red accent */
-  --accent-light:#e74c3c;   /* lighter red on hover */
-  --border:      #7f8c8d;   /* muted grey border */
-  --placeholder: #7f8c8d;   /* placeholder text */
+  --bg:           #121212;
+  --panel-bg:     #ffffff;
+  --text-dark:    #2c3e50;
+  --text-light:   #f5f5f5;
+  --accent:       #c0392b;
+  --accent-light: #e74c3c;
+  --border:       #c0392b;
+  --placeholder:  #7f8c8d;
 }
 
-/* Global reset */
 body {
   margin: 0;
   padding: 0;
   background: var(--bg);
-  color: var(--text);
+  color: var(--text-light);
   font-family: "Lato", sans-serif;
   line-height: 1.6;
 }
 
-/* App container */
 .app {
   max-width: 960px;
   margin: 0 auto;
@@ -33,16 +34,16 @@ body {
 
 /* Header / Banner */
 .header h1 {
-  font-family: "Merriweather", serif;
+  font-family: "MedievalSharp", serif;
   font-size: 3rem;
   margin: 0 auto 1.5rem;
   text-align: center;
   color: var(--accent);
-  background: var(--panel-bg);
+  background: var(--bg);
   padding: 1rem 2rem;
   border: 2px solid var(--border);
   border-radius: 0.5rem;
-  box-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
 }
 
 /* Tabs */
@@ -55,8 +56,8 @@ body {
 .tab {
   padding: 0.5rem 1.5rem;
   font-family: "Merriweather", serif;
-  background: var(--panel-bg);
-  color: var(--accent);
+  background: var(--bg);
+  color: var(--text-light);
   border: 2px solid var(--border);
   border-bottom: none;
   border-radius: 0.5rem 0.5rem 0 0;
@@ -76,10 +77,11 @@ body {
 /* Main panel */
 .main {
   background: var(--panel-bg);
+  color: var(--text-dark);
   border: 2px solid var(--border);
   border-radius: 0 0 0.5rem 0.5rem;
   padding: 2rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   margin-bottom: 2rem;
 }
 
@@ -96,6 +98,7 @@ body {
   cursor: pointer;
   transition: background 0.2s, transform 0.1s;
   text-decoration: none;
+  margin-top: 1rem;
 }
 .button:hover {
   background: var(--accent-light);
@@ -103,7 +106,8 @@ body {
 }
 
 /* Inputs */
-.input, .title-input {
+.input,
+.title-input {
   padding: 0.5rem;
   border: 2px solid var(--border);
   border-radius: 0.25rem;
@@ -112,11 +116,56 @@ body {
   box-sizing: border-box;
   margin-bottom: 1rem;
   background: var(--panel-bg);
-  color: var(--text);
+  color: var(--text-dark);
 }
-.input:focus, .title-input:focus {
+.input:focus,
+.title-input:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+/* Session card */
+.session-card {
+  background: var(--panel-bg);
+  color: var(--text-dark);
+  border: 2px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* Title & icons */
+.session-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.session-title {
+  font-family: "MedievalSharp", serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.edit-icon,
+.delete-icon {
+  margin-left: 0.5rem;
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 1.2rem;
+  transition: color 0.2s, transform 0.1s;
+}
+.edit-icon:hover,
+.delete-icon:hover {
+  color: var(--accent-light);
+  transform: translateY(-1px);
+}
+
+/* Timestamp */
+.timestamp {
+  font-size: 0.85rem;
+  color: var(--placeholder);
+  margin-bottom: 1rem;
 }
 
 /* Transcript box */
@@ -124,42 +173,17 @@ body {
   max-height: 200px;
   overflow-y: auto;
   white-space: pre-wrap;
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  border: 2px solid var(--border);
   padding: 1rem;
   font-family: "Lato", sans-serif;
-  margin-top: 1rem;
   font-size: 0.9rem;
-  color: var(--text);
+  margin-top: 1rem;
 }
 
-/* Session Title & Edit Icon */
-.session-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-.session-title {
-  font-family: "Merriweather", serif;
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--accent);
-}
-.edit-icon {
-  margin-left: 0.5rem;
-  cursor: pointer;
-  color: var(--accent);
-  font-size: 1.2rem;
-  transition: color 0.2s, transform 0.1s;
-}
-.edit-icon:hover {
-  color: var(--accent-light);
-  transform: translateY(-1px);
-}
-
-/* Lorebook card styling */
+/* Lorebook cards */
 .lore-group h3 {
-  font-family: "Merriweather", serif;
+  font-family: "MedievalSharp", serif;
   font-size: 1.5rem;
   margin-top: 2rem;
   margin-bottom: 1rem;
@@ -168,12 +192,13 @@ body {
   padding-bottom: 0.25rem;
 }
 .lore-card {
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  color: var(--text-dark);
+  border: 2px solid var(--border);
   border-radius: 0.5rem;
   padding: 1rem;
   margin-bottom: 1rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
 }
 .lore-card strong {
   color: var(--accent);
@@ -186,4 +211,9 @@ body {
   font-style: italic;
   color: var(--placeholder);
   margin: 2rem 0;
+}
+
+@keyframes indeterminate {
+  0%   { margin-left: -30%; }
+  100% { margin-left: 100%; }
 }

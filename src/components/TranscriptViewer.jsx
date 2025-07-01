@@ -6,26 +6,28 @@ import {
   orderBy,
   onSnapshot,
   updateDoc,
-  doc
+  doc,
+  deleteDoc
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../firebase";
 
 export default function TranscriptViewer() {
-  const [sessions, setSessions]       = useState([]);
-  const [expandedIds, setExpandedIds] = useState(new Set());
-  const [editingId, setEditingId]     = useState(null);
-  const [newTitle, setNewTitle]       = useState("");
+  const [sessions, setSessions]           = useState([]);
+  const [expandedIds, setExpandedIds]     = useState(new Set());
+  const [editingId, setEditingId]         = useState(null);
+  const [newTitle, setNewTitle]           = useState("");
+  const [summaryLoadingIds, setSummaryLoadingIds] = useState(new Set());
 
+  // Subscribe to sessions
   useEffect(() => {
     const q = query(
       collection(db, "sessions"),
       orderBy("createdAt", "desc")
     );
-    const unsub = onSnapshot(q, snap =>
-      setSessions(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-    );
-    return () => unsub();
+    return onSnapshot(q, snap => {
+      setSessions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
   }, []);
 
   const toggleTranscript = id => {
@@ -37,23 +39,40 @@ export default function TranscriptViewer() {
   };
 
   const generateSummary = async sessionId => {
+    // show progress bar
+    setSummaryLoadingIds(prev => new Set(prev).add(sessionId));
     const fn = httpsCallable(functions, "generateSummary");
-    await fn({ sessionId });
+    try {
+      await fn({ sessionId });
+    } finally {
+      // hide progress bar once function returns
+      setSummaryLoadingIds(prev => {
+        const next = new Set(prev);
+        next.delete(sessionId);
+        return next;
+      });
+    }
   };
 
-  const toSentenceCase = str =>
+  const deleteSession = async sessionId => {
+    if (window.confirm("Delete this session and all its data?")) {
+      await deleteDoc(doc(db, "sessions", sessionId));
+    }
+  };
+
+  const toSentenceCase = (str = "") =>
     str
       .toLowerCase()
       .replace(/(^\w|\.\s*\w)/g, c => c.toUpperCase());
 
   return (
     <div>
-      <h2 style={{ color: "var(--accent)", fontFamily: "Merriweather, serif" }}>
+      <h2 style={{ color: "var(--accent)", fontFamily: "Uncial Antiqua, serif" }}>
         Sessions
       </h2>
       {sessions.map(s => (
-        <div key={s.id} style={{ marginBottom: "2rem" }}>
-          {/* Title + Edit */}
+        <div key={s.id} className="session-card">
+          {/* Title & Icons */}
           <div className="session-header">
             {editingId === s.id ? (
               <input
@@ -61,16 +80,13 @@ export default function TranscriptViewer() {
                 value={newTitle}
                 onChange={e => setNewTitle(e.target.value)}
                 onBlur={async () => {
-                  if (newTitle.trim()) {
-                    await updateDoc(doc(db, "sessions", s.id), {
-                      title: newTitle.trim()
-                    });
+                  const title = newTitle.trim();
+                  if (title) {
+                    await updateDoc(doc(db, "sessions", s.id), { title });
                   }
                   setEditingId(null);
                 }}
-                onKeyDown={e => {
-                  if (e.key === "Enter") e.target.blur();
-                }}
+                onKeyDown={e => e.key === "Enter" && e.target.blur()}
                 autoFocus
               />
             ) : (
@@ -88,16 +104,23 @@ export default function TranscriptViewer() {
                 >
                   ✎
                 </span>
+                <span
+                  className="delete-icon"
+                  title="Delete session"
+                  onClick={() => deleteSession(s.id)}
+                >
+                  🗑️
+                </span>
               </>
             )}
           </div>
 
           {/* Timestamp */}
-          <div style={{ fontSize: "0.85rem", color: "var(--placeholder)" }}>
+          <div className="timestamp">
             {s.createdAt?.toDate().toLocaleString()}
           </div>
 
-          {/* Summary / Generate */}
+          {/* If summary exists */}
           {s.summary ? (
             <>
               <p style={{ marginTop: "1rem" }}>
@@ -114,14 +137,60 @@ export default function TranscriptViewer() {
               )}
             </>
           ) : s.transcript ? (
-            <button
-              className="button"
-              onClick={() => generateSummary(s.id)}
-            >
-              Generate Summary & Extract
-            </button>
+            summaryLoadingIds.has(s.id) ? (
+              // Indeterminate bar for summary generation
+              <div style={{ marginTop: "1rem" }}>
+                <p className="placeholder">Generating summary…</p>
+                <div
+                  style={{
+                    height: "6px",
+                    background: "#ddd",
+                    borderRadius: "3px",
+                    overflow: "hidden",
+                    marginTop: "0.5rem",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "30%",
+                      height: "100%",
+                      background: "var(--accent)",
+                      animation: "indeterminate 1.5s infinite",
+                    }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <button
+                className="button"
+                onClick={() => generateSummary(s.id)}
+              >
+                Generate Summary & Extract
+              </button>
+            )
           ) : (
-            <p className="placeholder">Transcribing…</p>
+            // transcription in progress
+            <div style={{ marginTop: "1rem" }}>
+              <p className="placeholder">Transcribing…</p>
+              <div
+                style={{
+                  height: "6px",
+                  background: "#ddd",
+                  borderRadius: "3px",
+                  overflow: "hidden",
+                  marginTop: "0.5rem",
+                }}
+              >
+                <div
+                  style={{
+                    width: "30%",
+                    height: "100%",
+                    background: "var(--accent)",
+                    animation: "indeterminate 1.5s infinite",
+                  }}
+                />
+              </div>
+            </div>
           )}
         </div>
       ))}
